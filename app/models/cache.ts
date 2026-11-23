@@ -190,7 +190,7 @@ class ScreenCache {
     }
 
     for (var i = 0, len = removeNums.length; i < len; ++i) {
-      delete this._cache[removeNums[i]];
+      delete this._cache[Number(removeNums[i])];
     }
   }
 

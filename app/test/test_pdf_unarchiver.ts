@@ -17,7 +17,7 @@ describe('PdfImageUnarchiver', function () {
     'RLE',
     'Zip',
   ];
-  var factory = Unarchiver.createFactory({
+  var factory = Unarchiver.createFactory(<Unarchiver.Setting><any>{
     pdfjsCanvasScale: () => 1,
     detectsImageXObjectPageInPdf: () => true,
     pageFileExtensions: () => [''],
@@ -80,6 +80,6 @@ describe('PdfImageUnarchiver', function () {
             done();
           });
       });
-    }(compressTypes[i]));
+    })(compressTypes[i]);
   }
 });

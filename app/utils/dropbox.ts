@@ -23,7 +23,7 @@ module DropboxStorage {
   }
 
   function chooseDropboxFile(Dropbox: typeof Dropbox): Promise<Picker.Result> {
-    return new Promise((resolver, reject) => {
+    return new Promise<Picker.Result>((resolver, reject) => {
       Dropbox.choose({
         success: (files: Dropbox.ChoosedFile[]) => {
           if (files.length === 0) { reject('dropbox chooser failed'); }

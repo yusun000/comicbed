@@ -24,7 +24,7 @@ describe('Screens', () => {
   var factory: Screen.Factory = {
     create: (size: Screen.Size) => new ScreenStub(),
   };
-  var impls = {
+  var impls: {[name: string]: Screens.Screens} = {
     'Screens': Screens.create(size, factory),
   };
   var pageContents = [ new Image(), new Image(), new Image(), new Image(), new Image(), ];
@@ -178,7 +178,7 @@ describe('Screens', () => {
           });
         });
       });
-    }(impls[key]));
+    })(impls[key]);
   }
 });
 

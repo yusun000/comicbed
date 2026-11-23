@@ -122,7 +122,9 @@ class FactoryImpl implements Unarchiver.Factory {
       break;
     default:
       var name = options.name ? options.name : url;
-      return Promise.rejected({ message: 'Unsupported File Format: ' + name});
+      return Promise.rejected<Unarchiver.Unarchiver>({
+        message: 'Unsupported File Format: ' + name
+      });
       break;
     }
 

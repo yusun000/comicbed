@@ -13,7 +13,7 @@ module GoogleDriveStorage {
   var developerKey = 'AIzaSyCnf2EefO8vRhA1Mu5iRJrX4bNO9zUD-EE';
 
   function authorizeGoogleDrive(gapi: any, immediate: boolean): Promise<void> {
-    return new Promise((resolve, reject) => {
+    return new Promise<void>((resolve, reject) => {
       gapi.auth.authorize({
         client_id: clientId, scope: [scope], immediate: immediate
       }, (authResult: GoogleApiOAuth2TokenObject) => {
@@ -28,7 +28,7 @@ module GoogleDriveStorage {
   }
 
   function waitUntilAuthorizable(gapi: any, trial: number, timeout: number): Promise<void> {
-    return new Promise((resolve, reject) => {
+    return new Promise<void>((resolve, reject) => {
       var rest = trial;
       var f = () => {
         setTimeout(() => {
@@ -49,7 +49,7 @@ module GoogleDriveStorage {
   }
 
   function showPicker(gapi: any): Promise<Picker.Result> {
-    return new Promise((resolve, reject) => {
+    return new Promise<Picker.Result>((resolve, reject) => { 
       var picker = new google.picker.PickerBuilder()
         .enableFeature(google.picker.Feature.NAV_HIDDEN)
         .setOAuthToken(gapi.auth.getToken().access_token)
@@ -64,8 +64,8 @@ module GoogleDriveStorage {
         })
         .build();
       picker.setVisible(true);
-    }).then((response: any) => {
-      return new Promise((resolve, reject) => {
+    }).then<Picker.Result>((response: any) => {
+      return new Promise<Picker.Result>((resolve, reject) => {
         var file = response.docs[0];
         var file_id = file.id;
         var request = (<any>gapi.client).drive.files.get({
@@ -73,7 +73,7 @@ module GoogleDriveStorage {
         });
         request.execute((resp: any) => {
           var downloadUrl = resp.downloadUrl;
-          var httpHeaders = {
+          var httpHeaders: { [key: string]: string } = {
             'Authorization': 'Bearer ' + gapi.auth.getToken().access_token
           };
           resolve({

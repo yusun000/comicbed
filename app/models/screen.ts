@@ -79,7 +79,7 @@ class ScreenModel extends Backbone.Model implements _Screen.Screen {
     super();
   }
 
-  defaults() {
+  defaults(): { status: _Screen.Status; content: _Screen.Content; } {
     return {
       status: _Screen.Status.Loading,
       content: null,

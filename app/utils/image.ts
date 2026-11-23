@@ -16,7 +16,9 @@ module ImageUtil {
   export function createImageElementFromArrayBuffer(buffer: ArrayBuffer)
   : Promise<HTMLImageElement> {
     var data = new Uint8Array(buffer);
-    if (!isImageData(data)) { return Promise.rejected('invalid image'); }
+    if (!isImageData(data)) {
+      return Promise.rejected<HTMLImageElement>('invalid image');
+    }
 
     var format = '';
     if (isJPEG(data)) {
@@ -58,7 +60,7 @@ module ImageUtil {
   }
 
   export function loadImageFromURL(url: string): Promise<HTMLImageElement> {
-    return new Promise((resolve, reject) => {
+    return new Promise<HTMLImageElement>((resolve, reject) => {
       var image: HTMLImageElement = new Image();
       image.onload = () => {
         resolve(image);

@@ -159,15 +159,17 @@ class SettingImpl implements Setting.Setting {
       this._sortSetting.setReverse(true);
     }
     if ('sort.order' in urlParams) {
-      var order = Sort.Order[urlParams['sort.order']];
+      var order = (<any>Sort.Order)[urlParams['sort.order']];
       if (typeof order !== 'undefined') {
         this._sortSetting.setOrder(order);
       }
     }
     // unarchiver
     if ('unarchiver.pdfjsCanvasScale' in urlParams) {
-      var scale = urlParams['unarchiver.pdfjsCanvasScale'] || 1;
-      this._unarchiverSetting.setPdfjsCanvasScale(scale);
+      var scale = Number(urlParams['unarchiver.pdfjsCanvasScale']);
+      if (isFinite(scale) && scale > 0) {
+        this._unarchiverSetting.setPdfjsCanvasScale(scale);
+      }
     }
     if ('unarchiver.detectsImageXObjectPageInPdf' in urlParams
         && urlParams['unarchiver.detectsImageXObjectPageInPdf'] !== 'false') {
@@ -183,13 +185,13 @@ class SettingImpl implements Setting.Setting {
       this._screenSetting.setDetectsSpreadPage(true);
     }
     if ('screen.viewMode' in urlParams) {
-      var mode = Screen.ViewMode[urlParams['screen.viewMode']];
+      var mode = (<any>Screen.ViewMode)[urlParams['screen.viewMode']];
       if (typeof mode !== 'undefined') {
         this._screenSetting.setViewMode(mode);
       }
     }
     if ('screen.pageDirection' in urlParams) {
-      var direction = Screen.PageDirection[urlParams['screen.pageDirection']];
+      var direction = (<any>Screen.PageDirection)[urlParams['screen.pageDirection']];
       if (typeof direction !== 'undefined') {
         this._screenSetting.setPageDirection(direction);
       }

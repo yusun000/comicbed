@@ -41,11 +41,11 @@ class BookFactory implements Book.Factory {
         }
         var pages: Page.Page[] = [];
         for (var i = 0, len = filenames.length; i < len; ++i) {
-          ((name: string) => {
-            pages.push(Page.createPage(name, i + 1, () => {
+          ((name: string, pageNum: number) => {
+            pages.push(Page.createPage(name, pageNum, () => {
               return unarchiver.unpack(name);
             }));
-          }(filenames[i]));
+          })(filenames[i], i + 1);
         }
         var pageCollection = Pages.createCollection(pages);
         return {

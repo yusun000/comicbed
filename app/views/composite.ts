@@ -15,7 +15,7 @@ class CompositeView extends BaseView {
 
   render() {
     super.render();
-    _.each(this.subViews, (view, selector) => {
+    _.each(this.subViews, (view: BaseView, selector: string) => {
       view.setElement(this.$(selector)).render();
     });
     return this;
@@ -36,7 +36,7 @@ class CompositeView extends BaseView {
 
   close(): void {
     super.close();
-    _.each(this.subViews, (view, selector) => {
+    _.each(this.subViews, (view: BaseView, selector: string) => {
       view.close();
     });
     this.subViews = null;

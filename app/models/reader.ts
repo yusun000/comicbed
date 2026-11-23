@@ -141,7 +141,7 @@ class ReaderModel extends Backbone.Model implements Reader.Reader {
       done: false,
     });
 
-    this._promise = this._bookFactory.createFromURL(url, options).then((book: Book.Book) => {
+    this._promise = this._bookFactory.createFromURL(url, options).then<Screens.Screens>((book: Book.Book) => {
       this._progress.update({ progress: 100 });
       this._book = this._pageSorter.sort(book, this._setting.sortSetting());
       this.resetReadingInfo();
@@ -150,14 +150,14 @@ class ReaderModel extends Backbone.Model implements Reader.Reader {
       return this._screens;
     }).progressed((progression: Progress.Progression) => {
       this._progress.update(progression);
-    }).catch((reason: any) => {
+    }).catch<Screens.Screens>((reason: any) => {
       if (reason.name === 'CancellationError') {
         this.setStatus(Reader.Status.Closed);
       } else {
         this.setMessage(reason.message || reason);
         this.setStatus(Reader.Status.Error);
       }
-      return Promise.rejected(reason);
+      return Promise.rejected<Screens.Screens>(reason);
     });
 
     return this._promise.uncancellable();

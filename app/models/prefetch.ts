@@ -61,8 +61,8 @@ class PagePrefetchScreensImpl extends Backbone.Model implements Screens.Screens 
         this._prefetchPromise = this._prefetchPromise.then(() => {
           return pages.at(index).content();
         }).then<void>((content: Page.Content) => {
-        }).then(PromiseUtil.wait(1));
-      }(i));
+        }).then<void>(PromiseUtil.wait<void>(1));
+      })(i);
     }
     // ignore errors (includes cancel)
     this._prefetchPromise.catch((e: any) => { });

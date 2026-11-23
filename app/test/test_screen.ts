@@ -25,7 +25,7 @@ describe('Screen', () => {
   };
 
   describe('the update method', () => {
-    var setting = {
+    var setting: Screen.Setting = <Screen.Setting><any>{
       detectsSpreadPage: () => true,
       viewMode: () => Screen.ViewMode.TwoPage,
       isSpreadPage: (content: Page.Content) => false,
@@ -72,7 +72,7 @@ describe('Screen', () => {
                 first = false;
                 return Promise.fulfilled(pageContents[i]);
               }
-              return Promise.rejected(null);
+              return Promise.rejected<Page.Content>(null);
             }
           }
         }
@@ -97,7 +97,7 @@ describe('Screen', () => {
   describe('the resize function', () => {
     it('call builder.build with same PageContent[] and new size', (done) => {
       var mock = sinon.mock(builder);
-      var setting = {
+      var setting: Screen.Setting = <Screen.Setting><any>{
         detectsSpreadPage: () => false,
         viewMode: () => Screen.ViewMode.OnePage,
         isSpreadPage: (content: Page.Content) => false,
@@ -117,7 +117,7 @@ describe('Screen', () => {
   });
 
   describe('the update function, when viewMode is OnePage', () => {
-    var setting = {
+    var setting: Screen.Setting = <Screen.Setting><any>{
       detectsSpreadPage: () => true,
       viewMode: () => Screen.ViewMode.OnePage,
       isSpreadPage: (content: Page.Content) => true,
@@ -148,7 +148,7 @@ describe('Screen', () => {
     });
   });
   describe('the update function, when viewMode is TwoPage, detectsSpreadPage is false', () => {
-    var setting = {
+    var setting: Screen.Setting = <Screen.Setting><any>{
       detectsSpreadPage: () => false,
       viewMode: () => Screen.ViewMode.TwoPage,
       isSpreadPage: (content: Page.Content) => true,
@@ -202,7 +202,7 @@ describe('Screen', () => {
     });
   });
   describe('the update function, when viewMode is TwoPage, detectsSpreadPage is true', () => {
-    var setting = {
+    var setting: Screen.Setting = <Screen.Setting><any>{
       detectsSpreadPage: () => true,
       viewMode: () => Screen.ViewMode.TwoPage,
       isSpreadPage: (content: Page.Content) => true,
@@ -237,7 +237,7 @@ describe('Screen', () => {
     });
     it('calls builder.build with pages.length === 1 if the isSpreadPage returns true for second page', (done) => {
       var first = true;
-      var setting = {
+      var setting: Screen.Setting = <Screen.Setting><any>{
         detectsSpreadPage: () => true,
         viewMode: () => Screen.ViewMode.TwoPage,
         isSpreadPage: (content: Page.Content) => {
@@ -257,7 +257,7 @@ describe('Screen', () => {
     });
     it('calls builder.build with pages.length === 2 if the isSpreadPage returns false', (done) => {
       var first = true;
-      var setting = {
+      var setting: Screen.Setting = <Screen.Setting><any>{
         detectsSpreadPage: () => true,
         viewMode: () => Screen.ViewMode.TwoPage,
         isSpreadPage: (content: Page.Content) => false,

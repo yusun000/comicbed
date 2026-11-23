@@ -1,7 +1,7 @@
 module.exports = function(grunt) {
   'use strict';
   // plugins
-  grunt.loadNpmTasks("grunt-bower-task");
+//  grunt.loadNpmTasks("grunt-bower-task");
   grunt.loadNpmTasks("grunt-contrib-clean");
   grunt.loadNpmTasks("grunt-contrib-watch");
   grunt.loadNpmTasks("grunt-exec");

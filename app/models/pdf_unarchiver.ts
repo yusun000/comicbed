@@ -92,11 +92,11 @@ class PdfUnarchiver implements Unarchiver.Unarchiver {
     };
 
     var renderTask = page.render(renderContext);
-    return Promise.cast<void>(renderTask).then(() => {
+    return Promise.cast<void>(renderTask).then<HTMLCanvasElement>(() => {
       return canvas;
     }).catch(Promise.CancellationError, (reason: any) => {
       renderTask.cancel();
-      return Promise.rejected(reason);
+      return Promise.rejected<HTMLCanvasElement>(reason);
     });
   }
 
@@ -135,7 +135,7 @@ class PdfUnarchiver implements Unarchiver.Unarchiver {
     // reject if the page name is invalid
     var pageNum = this._nameToPageNum[name];
     if (pageNum <= 0 || this._document.numPages < pageNum) {
-      return Promise.rejected('invalid filename:' +  name);
+      return Promise.rejected<Unarchiver.Content>('invalid filename:' + name);
     }
 
     var promise = this._nextResolver.promise

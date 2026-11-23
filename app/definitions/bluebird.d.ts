@@ -84,13 +84,13 @@ declare class Promise<T> {
   static longStackTraces(): void;
 
   // Collections
-  static all<U>(values: Promise[]): Promise<U>;
+  static all<U>(values: Promise<any>[]): Promise<U>;
   static props(object: {[propertyName: string]: Promise<any>})
   : {[propertyName: string]: Promise<any>};
   static settle<U>(values: any[]): Promise<U>;
-  static any<U>(values: Promise[]): Promise<U>;
-  static some<U>(values: Promise[], count: number): Promise<U>;
-  static join<U>(...values: Promise[]): Promise<U>;
+  static any<U>(values: Promise<any>[]): Promise<U>;
+  static some<U>(values: Promise<any>[], count: number): Promise<U>;
+  static join<U>(...values: Promise<any>[]): Promise<U>;
   // static spread
   // static map
   // static reduce
