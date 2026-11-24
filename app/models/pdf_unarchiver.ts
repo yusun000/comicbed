@@ -63,9 +63,9 @@ class PdfUnarchiver implements Unarchiver.Unarchiver {
     this._nextResolver = null;
 
     var numOfDigits = 1 + Math.floor(Math.log(this._document.numPages) / Math.log(10));
-    var pageNameformat = sprintf('pdf-page-%%0%dd', numOfDigits);
+    var pageNameformat = (<any>sprintf).sprintf('pdf-page-%%0%dd', numOfDigits);
     for (var i = 0, len = this._document.numPages; i < len; ++i) {
-      var pageName = sprintf(pageNameformat, i + 1);
+      var pageName = (<any>sprintf).sprintf(pageNameformat, i + 1);
       this._names.push(pageName);
       this._nameToPageNum[pageName] = i + 1;
     }

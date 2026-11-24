@@ -46,7 +46,7 @@ class ZipUnarchiver implements Unarchiver.Unarchiver {
     this._previousUnpackPromise.cancel();
 
     this._previousUnpackPromise = PromiseUtil.wait<void>(1)(null)
-      .then(() => Promise.cast<Blob>(this._reader.getFileAsBlob(name)))
+      .then(() => Promise.cast<Blob>((<any>this._reader).readFileAsBlob(name)))
       .then(PromiseUtil.wait(1))
       .then(PromiseUtil.readFileAsArrayBuffer)
       .then(PromiseUtil.wait(1))

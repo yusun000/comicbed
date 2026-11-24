@@ -15,9 +15,11 @@ require(['config'], () => {
     require(['jquerymobile'], (mobile: any) => {
       require([
         'backbone',
+        'progressbar',
         'routers/router'
       ], (
         Backbone: typeof Backbone,
+        ProgressBar: any,
         ComicBedRouter: typeof ComicBedRouter
       ) => {
         var router = new ComicBedRouter();

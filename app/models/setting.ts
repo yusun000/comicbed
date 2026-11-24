@@ -166,10 +166,8 @@ class SettingImpl implements Setting.Setting {
     }
     // unarchiver
     if ('unarchiver.pdfjsCanvasScale' in urlParams) {
-      var scale = Number(urlParams['unarchiver.pdfjsCanvasScale']);
-      if (isFinite(scale) && scale > 0) {
-        this._unarchiverSetting.setPdfjsCanvasScale(scale);
-      }
+      var scale = <number><any>(urlParams['unarchiver.pdfjsCanvasScale'] || 1);
+      this._unarchiverSetting.setPdfjsCanvasScale(scale);
     }
     if ('unarchiver.detectsImageXObjectPageInPdf' in urlParams
         && urlParams['unarchiver.detectsImageXObjectPageInPdf'] !== 'false') {
