@@ -21,5 +21,9 @@ assets/app/jquery-mobile
 
 tmp/
 
+# Modern PDF.js distribution
+assets/app/pdfjs-modern/
+!app/models/pdfjs_bridge.js
+
 # Generated setup assets
 generated-assets/

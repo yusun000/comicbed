@@ -1,71 +1,140 @@
 import Unarchiver = require('models/unarchiver');
-import PDFJS = require('pdfjs');
+import PdfjsBridge = require('models/pdfjs_bridge');
 import sprintf = require('sprintf');
-import ImageUtil = require('utils/image');
 import Promise = require('promise');
 import PromiseUtil = require('utils/promise');
 
-// TODO(seikichi): move to unarchiver.setting
-PDFJS.workerSrc = 'assets/app/pdfjs/js/pdf.worker.js';
-PDFJS.disableWorker = false;
-// PDFJS.disableAutoFetch = true;
-// PDFJS.disableRange = false;
-
 export = PdfUnarchiver;
+
+// Enable PDF diagnostics with ?pdfDebug=true.
+var pdfDebug = /(?:^|[?&])pdfDebug=true(?:&|$)/
+  .test(window.location.search);
+
+function debugLog(...messages: any[]): void {
+  if (pdfDebug) {
+    console.log.apply(console, messages);
+  }
+}
 
 class PdfUnarchiver implements Unarchiver.Unarchiver {
 
-  static createFromURL(url: string, setting: Unarchiver.Setting, options: Unarchiver.Options)
-  : Promise<Unarchiver.Unarchiver> {
-    var name = '';
-    if ('name' in options) {
-      name = options.name;
-    }
+  static createFromURL(
+    url: string,
+    setting: Unarchiver.Setting,
+    options: Unarchiver.Options
+  ): Promise<Unarchiver.Unarchiver> {
 
-    if (setting.enablesRangeRequestInPdf() && !PDFJS.disableRange) {
-      return Promise.cast<PDFJS.PDFDocumentProxy>(PDFJS.getDocument({
-        url: url,
-        httpHeaders: options.httpHeaders,
-        bytes: options.bytes,
-        isGoogleDrive: options.isGoogleDrive,
-      })).then((doc: PDFJS.PDFDocumentProxy) => {
-        return new PdfUnarchiver(name, doc, setting);
-      });
-    } else {
-      return PromiseUtil.getArrayBufferByXHR(url, options.httpHeaders)
-        .then((buffer: ArrayBuffer) => {
-          return Promise.cast<PDFJS.PDFDocumentProxy>(PDFJS.getDocument({data: buffer}));
-        }).then((doc: PDFJS.PDFDocumentProxy) => {
-          return new PdfUnarchiver(name, doc, setting);
+    var name = options.name || '';
+
+    return Promise.cast<any>(PdfjsBridge.load())
+      .then((pdfjs: any) => {
+
+        if (setting.enablesRangeRequestInPdf()) {
+          var params: any = {
+            url: url,
+            httpHeaders: options.httpHeaders
+          };
+
+          return PdfUnarchiver.openDocument(
+            pdfjs, params, name, setting
+          );
+        }
+
+        return PromiseUtil.getArrayBufferByXHR(
+          url, options.httpHeaders
+        ).then((buffer: ArrayBuffer) => {
+          return PdfUnarchiver.openDocument(
+            pdfjs,
+            { data: new Uint8Array(buffer) },
+            name,
+            setting
+          );
         });
-    }
+      });
   }
 
-  private _document: PDFJS.PDFDocumentProxy;
-  private _setting: Unarchiver.Setting;
+  private static openDocument(
+    pdfjs: any,
+    params: any,
+    name: string,
+    setting: Unarchiver.Setting
+  ): Promise<Unarchiver.Unarchiver> {
 
+    var task = pdfjs.getDocument(params);
+
+    return Promise.cast<any>(task.promise)
+      .then<Unarchiver.Unarchiver>(
+        (doc: any): Promise<Unarchiver.Unarchiver> => {
+        if (name) {
+          return Promise.fulfilled<Unarchiver.Unarchiver>(
+            new PdfUnarchiver(name, doc, task, setting)
+          );
+        }
+
+        return Promise.cast<any>(doc.getMetadata())
+          .then<Unarchiver.Unarchiver>(
+            (metadata: any): Unarchiver.Unarchiver => {
+            var title = '';
+
+            if (metadata && metadata.info) {
+              title = metadata.info.Title || '';
+            }
+
+            return new PdfUnarchiver(
+              title, doc, task, setting
+            );
+          });
+      }).catch((error: any) => {
+        task.destroy().catch(function () {});
+        return Promise.rejected<Unarchiver.Unarchiver>(
+          error
+        );
+      });
+  }
+
+  private _document: any;
+  private _loadingTask: any;
+  private _setting: Unarchiver.Setting;
   private _archiveName: string;
   private _names: string[];
   private _nameToPageNum: {[name: string]: number;};
+  private _tail: Promise<any>;
+  private _inFlight: {
+    [name: string]: Promise<Unarchiver.Content>;
+  };
+  private _activeRender: any;
+  private _closed: boolean;
 
-  private _canvas: HTMLCanvasElement;
-  private _previousUnpackPromise: Promise<Unarchiver.Content>;
-  private _nextResolver: PromiseResolver<void>;
-
-  constructor(name: string, pdfDocument: PDFJS.PDFDocumentProxy, setting: Unarchiver.Setting) {
+  constructor(
+    name: string,
+    pdfDocument: any,
+    loadingTask: any,
+    setting: Unarchiver.Setting
+  ) {
     this._document = pdfDocument;
+    this._loadingTask = loadingTask;
     this._setting = setting;
-    this._archiveName = name ? name : (<any>this._document).pdfInfo.info.Title;
+    this._archiveName = name;
     this._names = [];
     this._nameToPageNum = {};
-    this._canvas = document.createElement('canvas');
-    this._previousUnpackPromise = Promise.fulfilled(null);
-    this._nextResolver = null;
+    this._tail = Promise.fulfilled(null);
+    this._inFlight = {};
+    this._activeRender = null;
+    this._closed = false;
 
-    var numOfDigits = 1 + Math.floor(Math.log(this._document.numPages) / Math.log(10));
-    var pageNameformat = (<any>sprintf).sprintf('pdf-page-%%0%dd', numOfDigits);
-    for (var i = 0, len = this._document.numPages; i < len; ++i) {
-      var pageName = (<any>sprintf).sprintf(pageNameformat, i + 1);
+    var digits = 1 + Math.floor(
+      Math.log(pdfDocument.numPages) / Math.log(10)
+    );
+
+    var format = (<any>sprintf).sprintf(
+      'pdf-page-%%0%dd', digits
+    );
+
+    for (var i = 0; i < pdfDocument.numPages; ++i) {
+      var pageName = (<any>sprintf).sprintf(
+        format, i + 1
+      );
+
       this._names.push(pageName);
       this._nameToPageNum[pageName] = i + 1;
     }
@@ -79,107 +148,198 @@ class PdfUnarchiver implements Unarchiver.Unarchiver {
     return this._names;
   }
 
-  renderPage(page: PDFJS.PDFPageProxy, scale: number): Promise<HTMLCanvasElement> {
-    var CSS_UNITS = 96.0 / 72.0;
-    var canvas = this._canvas;
-    var viewport = page.getViewport(scale * CSS_UNITS);
-    var context = canvas.getContext('2d');
-    canvas.height = Math.floor(viewport.height);
-    canvas.width = Math.floor(viewport.width);
-    var renderContext = {
-      canvasContext: context,
-      viewport: viewport,
-    };
+  private renderPage(
+    page: any
+  ): Promise<Unarchiver.Content> {
 
-    var renderTask = page.render(renderContext);
-    return Promise.cast<void>(renderTask).then<HTMLCanvasElement>(() => {
-      return canvas;
-    }).catch(Promise.CancellationError, (reason: any) => {
-      renderTask.cancel();
-      return Promise.rejected<HTMLCanvasElement>(reason);
-    });
-  }
+    if (!this._setting.detectsImageXObjectPageInPdf()) {
+      debugLog('[PDF] XObject disabled');
+      return this.renderPageNormally(page);
+    }
 
-  getContent(page: PDFJS.PDFPageProxy): Promise<Unarchiver.Content> {
-    return this.renderPage(page, this._setting.pdfjsCanvasScale())
-      .then((canvas: HTMLCanvasElement) => {
-        page.destroy();
-        return ImageUtil.loadImageFromURL(canvas.toDataURL());
-      });
-  }
+    return Promise.cast<any>(PdfjsBridge.load())
+      .then((pdfjs: any) => {
+        return Promise.cast<any>(
+          pdfjs.extractImage(page)
+        );
+      }).catch((error: any): HTMLCanvasElement => {
+        console.warn('PDF image extraction failed:', error);
+        return null;
+      }).then((canvas: HTMLCanvasElement) => {
 
-  getXObjectContent(page: PDFJS.PDFPageProxy): Promise<Unarchiver.Content> {
-    var viewport = page.getViewport(1);
-    var pageAspectRatio = viewport.width / viewport.height;
-    // return Promise.cast<void>(page.loadXObject()).then(() => {
-    return this.renderPage(page, 0).then((canvas: HTMLCanvasElement) => {
-      var objs = page.objs.objs;
-      for (var key in objs) if (objs.hasOwnProperty(key)) {
-        if (key.indexOf('img_') !== 0) { continue; }
-        var data: any = page.objs.getData(key)
-        var imageAspectRatio = data.width / data.height;
-        if (Math.abs(pageAspectRatio - imageAspectRatio) >= 1e-3) { continue; }
-
-        page.destroy();
-        if (!('data' in data)) {
-          return Promise.fulfilled(<HTMLImageElement>data);
-        } else {
-          return ImageUtil.pixelDataToImageElement(data.data, data.width, data.height);
+        if (this._closed) {
+          if (canvas) {
+            canvas.width = 0;
+            canvas.height = 0;
+          }
+          return Promise.rejected<Unarchiver.Content>(
+            'PDF is closed'
+          );
         }
-      }
-      return this.getContent(page);
-    });
+
+        if (!canvas) {
+          debugLog(
+            '[PDF] XObject fallback', page.pageNumber
+          );
+          return this.renderPageNormally(page);
+        }
+
+        debugLog(
+          'PDF image extracted:',
+          canvas.width,
+          canvas.height
+        );
+
+        if (!this._closed) {
+          page.cleanup();
+        }
+
+        return Promise.fulfilled<Unarchiver.Content>(
+          canvas
+        );
+      });
   }
 
-  unpackPromise(name: string): Promise<Unarchiver.Content> {
-    // reject if the page name is invalid
-    var pageNum = this._nameToPageNum[name];
-    if (pageNum <= 0 || this._document.numPages < pageNum) {
-      return Promise.rejected<Unarchiver.Content>('invalid filename:' + name);
+  private renderPageNormally(
+    page: any
+  ): Promise<Unarchiver.Content> {
+
+    if (this._closed) {
+      return Promise.rejected<Unarchiver.Content>(
+        'PDF is closed'
+      );
     }
 
-    var promise = this._nextResolver.promise
-      .then(() => new Promise((resolve, reject) => {
-        this._document.getPage(pageNum)
-          .then((page: PDFJS.PDFPageProxy) => {
-            resolve(page);
-          }, (reason: any) => {
-            reject(reason);
-          });
-      }));
-    var unpackPromise: Promise<Unarchiver.Content> = null;
-    if (this._setting.detectsImageXObjectPageInPdf()) {
-      unpackPromise = promise.then((page: PDFJS.PDFPageProxy) => {
-        return this.getXObjectContent(page);
-      });
-    } else {
-      unpackPromise = promise.then((page: PDFJS.PDFPageProxy) => {
-        return this.getContent(page);
-      });
-    }
-    unpackPromise.finally(() => {
-      if (this._nextResolver !== null) {
-        var resolver = this._nextResolver;
-        this._nextResolver = null;
-        resolver.fulfill(null);
-      }
+    var CSS_UNITS = 96.0 / 72.0;
+    var scale = this._setting.pdfjsCanvasScale();
+    var viewport = page.getViewport({
+      scale: scale * CSS_UNITS
     });
-    return unpackPromise.uncancellable();
+
+    var canvas = document.createElement('canvas');
+
+    canvas.width = Math.max(
+      1, Math.floor(viewport.width)
+    );
+
+    canvas.height = Math.max(
+      1, Math.floor(viewport.height)
+    );
+
+    var renderTask = page.render({
+      canvas: canvas,
+      canvasContext: canvas.getContext('2d'),
+      viewport: viewport
+    });
+
+    this._activeRender = renderTask;
+
+    var completed = false;
+
+    return Promise.cast<void>(renderTask.promise)
+      .then<Unarchiver.Content>(
+        (): Promise<Unarchiver.Content> => {
+        if (this._closed) {
+          return Promise.rejected<Unarchiver.Content>(
+            'PDF is closed'
+          );
+        }
+
+        completed = true;
+
+        return Promise.fulfilled<Unarchiver.Content>(canvas);
+      }).finally(() => {
+        this._activeRender = null;
+
+        if (!this._closed) {
+          page.cleanup();
+        }
+
+        if (!completed) {
+          canvas.width = 0;
+          canvas.height = 0;
+        }
+      });
   }
 
   unpack(name: string): Promise<Unarchiver.Content> {
-    if (this._nextResolver !== null) {
-      this._nextResolver.reject(null);
-      this._nextResolver = Promise.pending<void>();
-    } else {
-      this._nextResolver = Promise.pending<void>();
-      this._nextResolver.fulfill(null);
+    var pageNum = this._nameToPageNum[name];
+
+    if (!pageNum || pageNum > this._document.numPages) {
+      return Promise.rejected<Unarchiver.Content>(
+        'invalid filename:' + name
+      );
     }
-    var promise = this.unpackPromise(name);
-    return promise;
+
+    if (this._closed) {
+      return Promise.rejected<Unarchiver.Content>(
+        'PDF is closed'
+      );
+    }
+
+    if (this._inFlight[name]) {
+      debugLog('[PDF] reuse in-flight', pageNum);
+      return this._inFlight[name].uncancellable();
+    }
+
+    var requestedAt = pdfDebug ? performance.now() : 0;
+
+    debugLog('[PDF] request', pageNum);
+
+    var task = this._tail.then(() => {
+      debugLog(
+        '[PDF] start', pageNum,
+        'queue ms:', Math.round(
+          pdfDebug ? performance.now() - requestedAt : 0
+        )
+      );
+      if (this._closed) {
+        return Promise.rejected<Unarchiver.Content>(
+          'PDF is closed'
+        );
+      }
+
+      return Promise.cast<any>(
+        this._document.getPage(pageNum)
+      ).then((page: any) => {
+        return this.renderPage(page).then((content) => {
+          debugLog(
+            '[PDF] ready', pageNum,
+            'total ms:', Math.round(
+              pdfDebug ? performance.now() - requestedAt : 0
+            ),
+            'size:', content.width, content.height
+          );
+          return content;
+        });
+      });
+    });
+
+    this._tail = task.then<any>(
+      (): any => null,
+      (): any => null
+    );
+
+    var sharedTask = task.finally(() => {
+      delete this._inFlight[name];
+    });
+
+    this._inFlight[name] = sharedTask;
+
+    return sharedTask.uncancellable();
   }
+
   close(): void {
-    this._previousUnpackPromise.cancel();
-    this._document.destroy();
+    if (this._closed) {
+      return;
+    }
+
+    this._closed = true;
+
+    if (this._activeRender) {
+      this._activeRender.cancel();
+    }
+
+    this._loadingTask.destroy().catch(function () {});
   }
 }

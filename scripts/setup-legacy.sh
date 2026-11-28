@@ -20,15 +20,19 @@ trap 'rm -rf "$WORK"' EXIT
 
 mkdir -p "$WORK/assets/app"
 
-echo "=== 1/3 Vendor libraries ==="
+echo "=== 1/4 Vendor libraries ==="
 "$ROOT/scripts/install-vendor.sh" "$WORK/assets/vendor"
 
-echo "=== 2/3 Git submodules ==="
+echo "=== 2/4 Git submodules ==="
 "$ROOT/scripts/build-submodules.sh" "$WORK/assets/app"
 
-echo "=== 3/3 jQuery Mobile ==="
+echo "=== 3/4 jQuery Mobile ==="
 "$ROOT/scripts/install-jquery-mobile.sh" \
   "$WORK/assets/app/jquery-mobile"
+
+echo "=== 4/4 PDF.js ==="
+"$ROOT/scripts/install-pdfjs.sh" \
+  "$WORK/assets/app/pdfjs-modern"
 
 mkdir -p "$(dirname "$OUTPUT")"
 mv "$WORK/assets" "$OUTPUT"

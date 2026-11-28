@@ -13,8 +13,6 @@ require.config({
     promise: '../assets/vendor/bluebird/index',
     progressbar: '../assets/vendor/bootstrap-progressbar/js/bootstrap-progressbar.min',
 
-    pdfjs: '../assets/app/pdfjs/js/pdf',
-    pdfjs_compatibility: '../assets/app/pdfjs/js/compatibility',
     unrar: '../assets/app/unrarlib/js/unrar.min',
     tiff: '../assets/app/tiff/js/tiff.min',
     jquerymobile: '../assets/app/jquery-mobile/js/jquery.mobile-1.4.0-rc.1',
@@ -33,13 +31,6 @@ require.config({
     },
     handlebars: {
       exports: 'Handlebars'
-    },
-    pdfjs_compatibility: {
-      exports: 'PDFJS'
-    },
-    pdfjs: {
-      deps: ['pdfjs_compatibility'],
-      exports: 'PDFJS'
     },
     log4javascript: {
       exports: 'log4javascript'

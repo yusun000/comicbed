@@ -1,0 +1,35 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="UTF-8"/>
+  <title>ComicBed Regression Tests</title>
+
+  <link rel="stylesheet"
+        href="assets/vendor/mocha/css/mocha.css"/>
+
+  <script src="assets/vendor/mocha/js/mocha.js"></script>
+  <script src="assets/vendor/chai/js/chai.js"></script>
+  <script src="assets/vendor/sinon/index.js"></script>
+
+  <script>
+    mocha.setup('bdd');
+
+    var testfiles = [
+      'test/test_book',
+      'test/test_pdf_unarchiver',
+      'test/test_reader',
+      'test/test_screen',
+      'test/test_screen_collection',
+      'test/test_unarchiver'
+    ];
+  </script>
+</head>
+<body>
+  <div id="mocha"></div>
+
+  <script
+    data-main="app/test"
+    src="assets/vendor/requirejs/js/require.js">
+  </script>
+</body>
+</html>

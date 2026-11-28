@@ -8,6 +8,37 @@ var assert = chai.assert;
 declare var sinon: any;
 
 describe('Screen', () => {
+  var mocks: any[] = [];
+
+  function createMock(target: any): any {
+    var mock = sinon.mock(target);
+    mocks.push(mock);
+    return mock;
+  }
+
+  afterEach(() => {
+    mocks.forEach((mock: any) => {
+      mock.restore();
+    });
+    mocks = [];
+  });
+
+  function assertScreenContent(
+    screen: Screen.Screen,
+    expected: Page.Content[]
+  ): void {
+    var content = screen.content();
+
+    assert.strictEqual(content.nodeType, 11);
+    assert.strictEqual(
+      content.childNodes.length, expected.length
+    );
+
+    expected.forEach((page: Page.Content, i: number) => {
+      assert.strictEqual(content.childNodes[i], page);
+    });
+  }
+
   var builder: Scaler.Scaler = {
     scale: (pages: Page.Content[], params: Scaler.ScaleParams) => <any>undefined
   };
@@ -39,10 +70,12 @@ describe('Screen', () => {
       }).then(() => {
         assert.strictEqual(Screen.Status.Success, screen.status());
         done();
+      }).catch((error: any) => {
+        done(error || new Error('Screen test failed'));
       });
     });
     it('makes the status Screen.Status.Error when first page.content() failed', (done) => {
-      var mock = sinon.mock(pages);
+      var mock = createMock(pages);
       mock.expects('at').atLeast(1).withExactArgs(0).returns({
         name: () => 'page',
         pageNum: () => 0,
@@ -57,6 +90,8 @@ describe('Screen', () => {
         assert.strictEqual(1, screen.pages().length);
         mock.verify();
         done();
+      }).catch((error: any) => {
+        done(error || new Error('Screen test failed'));
       });
     });
     it('calls builder.build with pages.length === 1 if second page.content() failed', (done) => {
@@ -77,26 +112,27 @@ describe('Screen', () => {
           }
         }
       };
-      var mock = sinon.mock(builder);
-      var content = new Image();
-      mock.expects('scale').once().withArgs([pageContents[0]], size).returns(content);
+      var mock = createMock(builder);
+      mock.expects('scale').once().withArgs([pageContents[0]], size);
       var screen = Screen.createScreen(size, builder, setting);
       screen.update(pages, {
         currentPageNum: 0,
         readingDirection: Screen.ReadingDirection.Forward
       }).then(() => {
         assert.strictEqual(Screen.Status.Interrupted, screen.status());
-        assert.strictEqual(content, screen.content());
+        assertScreenContent(screen, [pageContents[0]]);
         assert.strictEqual(1, screen.pages().length);
         mock.verify();
         done();
+      }).catch((error: any) => {
+        done(error || new Error('Screen test failed'));
       });
     });
   });
 
   describe('the resize function', () => {
     it('call builder.build with same PageContent[] and new size', (done) => {
-      var mock = sinon.mock(builder);
+      var mock = createMock(builder);
       var setting: Screen.Setting = <Screen.Setting><any>{
         detectsSpreadPage: () => false,
         viewMode: () => Screen.ViewMode.OnePage,
@@ -112,6 +148,8 @@ describe('Screen', () => {
         screen.resize(1280, 960);
         mock.verify();
         done();
+      }).catch((error: any) => {
+        done(error || new Error('Screen test failed'));
       });
     });
   });
@@ -124,26 +162,30 @@ describe('Screen', () => {
       pageDirection: () => Screen.PageDirection.R2L,
     };
     it('should not call setting.isSpreadPage function', (done) => {
-      var mock = sinon.mock(setting);
+      var mock = createMock(setting);
       mock.expects('isSpreadPage').never();
       var screen = Screen.createScreen(size, builder, setting);
       screen.update(pages, {
         currentPageNum: 0,
         readingDirection: Screen.ReadingDirection.Forward
-      }).then(() => { mock.verify(); done(); });
+      }).then(() => { mock.verify(); done();
+      }).catch((error: any) => {
+        done(error || new Error('Screen test failed'));
+      });
     });
     it('calls builer.build with pages whose length equals to 1', (done) => {
-      var mock = sinon.mock(builder);
-      var content = new Image();
-      mock.expects('scale').once().withArgs([pageContents[0]], size).returns(content);
+      var mock = createMock(builder);
+      mock.expects('scale').once().withArgs([pageContents[0]], size);
       var screen = Screen.createScreen(size, builder, setting);
       screen.update(pages, {
         currentPageNum: 0,
         readingDirection: Screen.ReadingDirection.Forward
       }).then(() => {
-        assert.strictEqual(content, screen.content());
+        assertScreenContent(screen, [pageContents[0]]);
         mock.verify();
         done();
+      }).catch((error: any) => {
+        done(error || new Error('Screen test failed'));
       });
     });
   });
@@ -155,50 +197,65 @@ describe('Screen', () => {
       pageDirection: () => Screen.PageDirection.R2L,
     };
     it('should not call setting.isSpreadPage function', (done) => {
-      var mock = sinon.mock(setting);
+      var mock = createMock(setting);
       mock.expects('isSpreadPage').never();
       var screen = Screen.createScreen(size, builder, setting);
       screen.update(pages, {
         currentPageNum: 0, 
         readingDirection: Screen.ReadingDirection.Forward
-      }).then(() => { mock.verify(); done(); });
+      }).then(() => { mock.verify(); done();
+      }).catch((error: any) => {
+        done(error || new Error('Screen test failed'));
+      });
     });
     it('calls builder.build with pages.length === 1 if the update with last page and read forward', (done) => {
       var len = pages.length;
-      var mock = sinon.mock(builder);
+      var mock = createMock(builder);
       var screen = Screen.createScreen(size, builder, setting);
       mock.expects('scale').once().withArgs([pageContents[len - 1]], size);
       screen.update(pages, {
         currentPageNum: len - 1,
         readingDirection: Screen.ReadingDirection.Forward
-      }).then(() => { mock.verify(); done(); });
+      }).then(() => { mock.verify(); done();
+      }).catch((error: any) => {
+        done(error || new Error('Screen test failed'));
+      });
     });
     it('calls builder.build with pages.length === 2 if the update with last page and read backward', (done) => {
       var len = pages.length;
-      var mock = sinon.mock(builder);
+      var mock = createMock(builder);
       var screen = Screen.createScreen(size, builder, setting);
       mock.expects('scale').once().withArgs([pageContents[len - 2], pageContents[len - 1]], size);
       screen.update(pages, {
         currentPageNum: len - 1,
         readingDirection: Screen.ReadingDirection.Backward
-      }).then(() => { mock.verify(); done(); });
+      }).then(() => { mock.verify(); done();
+      }).catch((error: any) => {
+        done(error || new Error('Screen test failed'));
+      });
     });
     it('calls builder.build with pages.length === 2 if the update with first page and read forward', (done) => {
-      var mock = sinon.mock(builder);
+      var mock = createMock(builder);
       var screen = Screen.createScreen(size, builder, setting);
       mock.expects('scale').once().withArgs([pageContents[0], pageContents[1]], size);
       screen.update(pages, { currentPageNum: 0, totalPageNum: pages.length,
                              readingDirection: Screen.ReadingDirection.Forward})
-        .then(() => { mock.verify(); done(); });
+        .then(() => { mock.verify(); done();
+      }).catch((error: any) => {
+        done(error || new Error('Screen test failed'));
+      });
     });
     it('calls builder.build with pages.length === 1 if the update with first page and read backward', (done) => {
-      var mock = sinon.mock(builder);
+      var mock = createMock(builder);
       var screen = Screen.createScreen(size, builder, setting);
       mock.expects('scale').once().withArgs([pageContents[0]], size);
       screen.update(pages, {
         currentPageNum: 0,
         readingDirection: Screen.ReadingDirection.Backward
-      }).then(() => { mock.verify(); done(); });
+      }).then(() => { mock.verify(); done();
+      }).catch((error: any) => {
+        done(error || new Error('Screen test failed'));
+      });
     });
   });
   describe('the update function, when viewMode is TwoPage, detectsSpreadPage is true', () => {
@@ -209,31 +266,40 @@ describe('Screen', () => {
       pageDirection: () => Screen.PageDirection.R2L,
     };
     it('should call once setting.isSpreadPage function if isSpreadPage returns true', (done) => {
-      var mock = sinon.mock(setting);
+      var mock = createMock(setting);
       mock.expects('isSpreadPage').once().returns(true);
       var screen = Screen.createScreen(size, builder, setting);
       screen.update(pages, {
         currentPageNum: 0,
         readingDirection: Screen.ReadingDirection.Forward
-      }).then(() => { mock.verify(); done(); });
+      }).then(() => { mock.verify(); done();
+      }).catch((error: any) => {
+        done(error || new Error('Screen test failed'));
+      });
     });
     it('should call twice setting.isSpreadPage function if isSpreadPage returns false', (done) => {
-      var mock = sinon.mock(setting);
+      var mock = createMock(setting);
       mock.expects('isSpreadPage').twice().returns(false);
       var screen = Screen.createScreen(size, builder, setting);
       screen.update(pages, {
         currentPageNum: 0,
         readingDirection: Screen.ReadingDirection.Forward
-      }).then(() => { mock.verify(); done(); });
+      }).then(() => { mock.verify(); done();
+      }).catch((error: any) => {
+        done(error || new Error('Screen test failed'));
+      });
     });
     it('calls builder.build with pages.length === 1 if the isSpreadPage returns true', (done) => {
-      var mock = sinon.mock(builder);
+      var mock = createMock(builder);
       var screen = Screen.createScreen(size, builder, setting);
       mock.expects('scale').once().withArgs([pageContents[0]], size);
       screen.update(pages, {
         currentPageNum: 0,
         readingDirection: Screen.ReadingDirection.Forward
-      }).then(() => { mock.verify(); done(); });
+      }).then(() => { mock.verify(); done();
+      }).catch((error: any) => {
+        done(error || new Error('Screen test failed'));
+      });
     });
     it('calls builder.build with pages.length === 1 if the isSpreadPage returns true for second page', (done) => {
       var first = true;
@@ -241,19 +307,24 @@ describe('Screen', () => {
         detectsSpreadPage: () => true,
         viewMode: () => Screen.ViewMode.TwoPage,
         isSpreadPage: (content: Page.Content) => {
-          if (first) { return true; }
-          first = false;
-          return false;
+          if (first) {
+            first = false;
+            return false;
+          }
+          return true;
         },
         pageDirection: () => Screen.PageDirection.R2L,
       };
-      var mock = sinon.mock(builder);
+      var mock = createMock(builder);
       var screen = Screen.createScreen(size, builder, setting);
       mock.expects('scale').once().withArgs([pageContents[0]], size);
       screen.update(pages, {
         currentPageNum: 0,
         readingDirection: Screen.ReadingDirection.Forward
-      }).then(() => { mock.verify(); done(); });
+      }).then(() => { mock.verify(); done();
+      }).catch((error: any) => {
+        done(error || new Error('Screen test failed'));
+      });
     });
     it('calls builder.build with pages.length === 2 if the isSpreadPage returns false', (done) => {
       var first = true;
@@ -263,13 +334,16 @@ describe('Screen', () => {
         isSpreadPage: (content: Page.Content) => false,
         pageDirection: () => Screen.PageDirection.R2L,
       };
-      var mock = sinon.mock(builder);
+      var mock = createMock(builder);
       var screen = Screen.createScreen(size, builder, setting);
       mock.expects('scale').once().withArgs([pageContents[0], pageContents[1]], size);
       screen.update(pages, {
         currentPageNum: 0,
         readingDirection: Screen.ReadingDirection.Forward
-      }).then(() => { mock.verify(); done(); });
+      }).then(() => { mock.verify(); done();
+      }).catch((error: any) => {
+        done(error || new Error('Screen test failed'));
+      });
     });
   });
 });

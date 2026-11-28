@@ -17,7 +17,8 @@
     "grunt-preprocess": "~3.0.1",
     "grunt-manifest": "~0.4.0",
     "typescript": "0.9.7",
-    "grunt-cli": "1.4.3"
+    "grunt-cli": "1.4.3",
+    "mime": "1.2.11"
   },
   "engines": {
     "node": ">=22.0.0"

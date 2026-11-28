@@ -3,6 +3,12 @@ module.exports = function(grunt) {
 
   var typescriptSources = 'app/**/*.ts';
 
+  // MIME types required by modern PDF.js.
+  require('mime').define({
+    'text/javascript': ['mjs'],
+    'application/wasm': ['wasm']
+  });
+
   // plugins
   grunt.loadNpmTasks("grunt-contrib-clean");
   grunt.loadNpmTasks("grunt-contrib-watch");
@@ -64,13 +70,19 @@ module.exports = function(grunt) {
     'connect:release'
   ]);
   grunt.registerTask('server:release', ['connect:release']);
+  grunt.registerTask('test:browser', [
+    'typescript',
+    'handlebars',
+    'connect:debug:keepalive'
+  ]);
   // config
   grunt.initConfig({
     clean: {
       generated: [
         'dist',
         'app/**/*.js',
-        'app/**/*.js.map'
+        'app/**/*.js.map',
+        '!app/models/pdfjs_bridge.js'
       ]
     },
     connect: {
@@ -104,7 +116,9 @@ module.exports = function(grunt) {
           {
             src: [
               'index.html',
-              'assets/app/pdfjs/js/pdf.worker.js',
+              'assets/app/pdfjs-modern/**/*',
+              'app/models/pdfjs-loader.mjs',
+              'app/models/pdfjs-image-extractor.mjs',
               'assets/app/tiff/js/tiff.min.js',
               'assets/app/css/images/*',
             ],
