@@ -138,7 +138,7 @@ class SortSettingModel extends Backbone.Model implements Sort.Setting {
 
 
 class SettingImpl implements Setting.Setting {
-  private _screenSetting: Setting.ScreenSetting;
+  private _screenSetting: ScreenSettingModel;
   private _unarchiverSetting: UnarchiverSettingModel;
   private _cacheSetting: CacheSettingModel;
   private _sortSetting: SortSettingModel;
@@ -152,6 +152,13 @@ class SettingImpl implements Setting.Setting {
     this._cacheSetting = new CacheSettingModel();
     this._sortSetting = new SortSettingModel();
     this._prefetchSetting = new PrefetchSettingModel();
+
+    this.restorePreference(this._screenSetting, 'viewMode',
+      [Screen.ViewMode.OnePage, Screen.ViewMode.TwoPage]);
+    this.restorePreference(this._screenSetting, 'pageDirection',
+      [Screen.PageDirection.L2R, Screen.PageDirection.R2L]);
+    this.restorePreference(this._unarchiverSetting, 'enablesRangeRequestInPdf',
+      [true, false]);
 
     // sort
     if ('sort.reverse' in urlParams
@@ -173,9 +180,9 @@ class SettingImpl implements Setting.Setting {
         && urlParams['unarchiver.detectsImageXObjectPageInPdf'] !== 'false') {
       this._unarchiverSetting.setDetectsImageXObjectPageInPdf(true);
     }
-    if ('unarchiver.enablesRangeRequestInPdf' in urlParams
-        && urlParams['unarchiver.enablesRangeRequestInPdf'] === 'false') {
-      this._unarchiverSetting.setEnablesRangeRequestInPdf(false);
+    if ('unarchiver.enablesRangeRequestInPdf' in urlParams) {
+      this._unarchiverSetting.setEnablesRangeRequestInPdf(
+        urlParams['unarchiver.enablesRangeRequestInPdf'] !== 'false');
     }
     // screen
     if ('screen.detectsSpreadPage' in urlParams &&
@@ -209,6 +216,38 @@ class SettingImpl implements Setting.Setting {
     }
 
     // scaler (TODO)
+
+    this.savePreferenceOnChange(this._screenSetting, 'viewMode');
+    this.savePreferenceOnChange(this._screenSetting, 'pageDirection');
+    this.savePreferenceOnChange(this._unarchiverSetting, 'enablesRangeRequestInPdf');
+  }
+
+  private restorePreference(model: Backbone.Model, attribute: string,
+                            allowedValues: any[]): void {
+    var saved: string;
+    try {
+      saved = window.localStorage.getItem('comicbed.config.' + attribute);
+    } catch (error) {
+      return;
+    }
+
+    for (var i = 0; i < allowedValues.length; ++i) {
+      if (saved === String(allowedValues[i])) {
+        model.set(attribute, allowedValues[i]);
+        return;
+      }
+    }
+  }
+
+  private savePreferenceOnChange(model: Backbone.Model, attribute: string): void {
+    model.on('change:' + attribute, () => {
+      try {
+        window.localStorage.setItem('comicbed.config.' + attribute,
+          String(model.get(attribute)));
+      } catch (error) {
+        // The current setting still works when storage is unavailable.
+      }
+    });
   }
 
   screenSetting() { return this._screenSetting; }
