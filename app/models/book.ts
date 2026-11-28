@@ -25,6 +25,16 @@ module Book {
 
 // private
 
+function displayFilename(name: string): string {
+  var filename = name.split(/[?#]/)[0].replace(/\\/g, '/').split('/').pop();
+  if (!filename) { return name; }
+  try {
+    return decodeURIComponent(filename);
+  } catch (error) {
+    return filename;
+  }
+}
+
 class BookFactory implements Book.Factory {
   unarchiverFactory: Unarchiver.Factory;
 
@@ -49,7 +59,10 @@ class BookFactory implements Book.Factory {
         }
         var pageCollection = Pages.createCollection(pages);
         return {
-          title: () => unarchiver.archiveName(),
+          title: () => {
+            var name = unarchiver.archiveName();
+            return name === url && !(options && options.name) ? displayFilename(name) : name;
+          },
           close: () => { unarchiver.close(); },
           pages: () => pageCollection,
         };
