@@ -48,5 +48,47 @@ ComicBed はWebブラウザ上で動作するコミックビューワです (注
 + sort.order: 'NameNatural' or 'NameDirectory' or 'Entry'
 + unarchiver.enablesRangeRequestInPdf: boolean
 
+## ソースコードからのビルド
+
+Ubuntu、Node.js 22.22.1、npm 9.2.0、Firefox で検証しています。
+Git、Bash、GNU コマンドラインツール、および npm と Git リポジトリ
+へのネットワーク接続が必要です。Grunt CLI と TypeScript 0.9.7 は
+プロジェクト内に導入するため、グローバルインストールは不要です。
+
+新規チェックアウトしたリポジトリのルートで以下を実行します。
+
+```sh
+npm ci --ignore-scripts --legacy-peer-deps --no-audit --no-fund
+./scripts/setup-legacy.sh "$PWD/generated-assets"
+cp -a generated-assets/. assets/
+./node_modules/.bin/grunt build
+```
+
+環境構築スクリプトには存在しない出力先を指定してください。
+依存ライブラリの取得、固定された Git サブモジュールの初期化、
+ブラウザ用ファイルの構築を行います。既存の `assets/` は削除しないで
+ください。`generated-assets/` は内容をコピーした後に削除できます。
+
+リリース用ファイルは `dist/` に生成され、ビルド時には
+`http://localhost:9001/` で HTTP サーバーが起動します。
+ビルド済みのリリース版を配信する場合は以下を実行します。
+
+```sh
+./node_modules/.bin/grunt server:release
+```
+
+`dist/` の内容は静的 HTTP サーバーでも配信できます。
+
+### 動作確認と制約
+
+`npm ci` による依存関係の導入、TypeScript のコンパイル、リリースビルド、
+PDF・ZIP・CBZ の閲覧、1ページ・2ページ表示を確認しています。
+今回のビルド復旧では従来の PDF.js フォークと旧世代のブラウザ用
+ライブラリを維持しています。これらの更新や脆弱性対策は対象外です。
+開発用サーバーはローカル検証用であり、一般公開用ではありません。
+RAR/CBR、TIFF、現行クラウドサービスとの互換性は再検証していません。
+lockfile は本体の npm 依存関係を固定しますが、環境構築スクリプトが
+取得するすべての依存関係を固定するものではありません。
+
 ## ライセンス
 GPL v3 or later
