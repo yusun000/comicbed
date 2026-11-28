@@ -2,6 +2,7 @@ import $ = require('jquery');
 import Factory = require('models/factory');
 import Reader = require('models/reader');
 import Setting = require('models/setting');
+import MenuSetting = require('models/menu_setting');
 import CompositeView = require('views/composite');
 import ScreenCollectionView = require('views/screens');
 import ProgressView = require('views/progress');
@@ -60,8 +61,10 @@ class ComicBedView extends CompositeView {
       reader: this._reader,
     }));
 
+    var menu = new MenuSetting();
     this.assign('#footer', new FooterView({
       template: templates.footer,
+      menu: menu,
       reader: this._reader,
       setting: this._setting.screenSetting(),
     }));
@@ -97,6 +100,7 @@ class ComicBedView extends CompositeView {
       template: templates.dialog,
       innerView: new SettingView({
         template: templates.setting,
+        menu: menu,
         setting: this._setting,
       }),
     }));

@@ -3,6 +3,7 @@ import BaseView = require('views/base');
 import Reader = require('models/reader');
 import templates = require('templates');
 import Screen = require('models/screen');
+import MenuSetting = require('models/menu_setting');
 import DropboxStorage = require('utils/dropbox');
 import GoogoleDriveStorage = require('utils/gdrive');
 import Picker = require('utils/picker');
@@ -95,6 +96,10 @@ class FooterView extends BaseView {
       this.render();
       this.$el.trigger('create');
     });
+    this.listenTo(this._options.menu, 'change', () => {
+      this.render();
+      this.$el.trigger('create');
+    });
     this.listenTo(this._setting, 'change', () => {
       this.render();
       this.$el.trigger('create');
@@ -112,6 +117,9 @@ class FooterView extends BaseView {
     }
     return this._template({
       opened: opened,
+      showFile: this._options.menu.isVisible('showFile'),
+      showDropbox: this._options.menu.isVisible('showDropbox'),
+      showGoogleDrive: this._options.menu.isVisible('showGoogleDrive'),
       alignedCurrentPageNum: value,
       currentPageNum: current,
       totalPageNum: total,
@@ -125,5 +133,6 @@ module FooterView {
     reader: Reader.Reader;
     template: HTMLTemplate;
     setting: Screen.Setting;
+    menu: MenuSetting;
   }
 }

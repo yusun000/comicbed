@@ -52,6 +52,18 @@
            for="fullscreen-checkbox">Fullscreen</label>
     {{/if}}
 
+    <fieldset data-role="controlgroup">
+      <legend>Menu buttons</legend>
+      <input type="checkbox" class="menu-visibility" name="showFile" id="menu-file"
+             {{#if showFile}}checked="checked"{{/if}}>
+      <label for="menu-file">File</label>
+      <input type="checkbox" class="menu-visibility" name="showDropbox" id="menu-dropbox"
+             {{#if showDropbox}}checked="checked"{{/if}}>
+      <label for="menu-dropbox">Dropbox</label>
+      <input type="checkbox" class="menu-visibility" name="showGoogleDrive" id="menu-google-drive"
+             {{#if showGoogleDrive}}checked="checked"{{/if}}>
+      <label for="menu-google-drive">Google Drive</label>
+    </fieldset>
   </form>
 </div>
 <div data-role="footer" class="ui-bar">

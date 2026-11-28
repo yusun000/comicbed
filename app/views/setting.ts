@@ -1,6 +1,7 @@
 import Backbone = require('backbone');
 import BaseView = require('views/base');
 import Setting = require('models/setting');
+import MenuSetting = require('models/menu_setting');
 import Screen = require('models/screen');
 import Unarchiver = require('models/unarchiver');
 import fullscreen = require('utils/fullscreen');
@@ -19,6 +20,7 @@ class SettingView extends BaseView {
     this._setting = options.setting;
 
     this.events = {
+      'change .menu-visibility': 'onMenuVisibilityChange',
       'click #range-request-checkbox-label': 'onRangeClick',
       'click #view-mode-radio-choice-one-label': 'onOnePageClick',
       'click #view-mode-radio-choice-two-label': 'onTwoPageClick',
@@ -59,6 +61,9 @@ class SettingView extends BaseView {
     var TwoPage = !OnePage;
     var enablesRangeRequestInPdf = setting.unarchiverSetting().enablesRangeRequestInPdf();
     return this._template({
+      showFile: this._options.menu.isVisible('showFile'),
+      showDropbox: this._options.menu.isVisible('showDropbox'),
+      showGoogleDrive: this._options.menu.isVisible('showGoogleDrive'),
       L2R: L2R,
       R2L: R2L,
       OnePage: OnePage,
@@ -73,6 +78,11 @@ class SettingView extends BaseView {
     super.render();
     this.$el.trigger('create');
     return this;
+  }
+
+  onMenuVisibilityChange(event: Event) {
+    var input = <HTMLInputElement>(<any>event).currentTarget;
+    this._options.menu.setVisible(input.name, input.checked);
   }
 
   onFullscreenClick(event: Event) {
@@ -115,5 +125,6 @@ module SettingView {
   export interface Options extends Backbone.ViewOptions {
     template: HTMLTemplate;
     setting: Setting.Setting;
+    menu: MenuSetting;
   }
 }

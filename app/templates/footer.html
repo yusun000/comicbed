@@ -14,18 +14,24 @@
 </div>
 <div data-role="navbar">
   <ul>
+    {{#if showFile}}
     <li><button id="file-button"
                 data-role="button"
                 data-icon="file"
                 data-iconpos="bottom">File</button></li>
+    {{/if}}
+    {{#if showDropbox}}
     <li><button id="dropbox-button"
                 data-role="button"
                 data-icon="dropbox"
                 data-iconpos="bottom">Dropbox</button></li>
+    {{/if}}
+    {{#if showGoogleDrive}}
     <li><button id="google-drive-button"
                 data-role="button"
                 data-icon="google-drive"
                 data-iconpos="bottom">Google Drive</button></li>
+    {{/if}}
     <li><button id="setting-button"
                 data-role="button"
                 data-icon="gear"
