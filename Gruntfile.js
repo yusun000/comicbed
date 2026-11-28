@@ -1,7 +1,9 @@
 module.exports = function(grunt) {
   'use strict';
+
+  var typescriptSources = 'app/**/*.ts';
+
   // plugins
-//  grunt.loadNpmTasks("grunt-bower-task");
   grunt.loadNpmTasks("grunt-contrib-clean");
   grunt.loadNpmTasks("grunt-contrib-watch");
   grunt.loadNpmTasks("grunt-exec");
@@ -13,10 +15,37 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks("grunt-contrib-requirejs");
   grunt.loadNpmTasks("grunt-contrib-uglify");
   grunt.loadNpmTasks("grunt-manifest");
-  grunt.loadNpmTasks("grunt-typescript");
+  // Compile with the pinned TypeScript compiler.
+  // Unlike grunt-typescript, propagate compiler failures.
+  grunt.registerTask('typescript', 'Compile TypeScript', function() {
+    var compiler = require.resolve('typescript/bin/tsc.js');
+
+    var args = [
+      compiler,
+      '--module', 'amd',
+      '--target', 'ES3',
+      '--sourcemap',
+      '--noImplicitAny'
+    ].concat(grunt.file.expand(typescriptSources).sort());
+
+    var result = require('child_process').spawnSync(
+      process.execPath,
+      args,
+      { stdio: 'inherit' }
+    );
+
+    if (result.error) {
+      grunt.fail.warn(result.error.message);
+    }
+
+    if (result.status !== 0) {
+      grunt.fail.warn(
+        'TypeScript compilation failed: ' + result.status
+      );
+    }
+  });
   grunt.loadNpmTasks("grunt-preprocess");
   // tasks
-  grunt.registerTask('setup', ['bower']);
   grunt.registerTask('default', [
     'connect:debug',
     'typescript',
@@ -37,7 +66,13 @@ module.exports = function(grunt) {
   grunt.registerTask('server:release', ['connect:release']);
   // config
   grunt.initConfig({
-    clean: ['dist', 'app/**/*.js'],
+    clean: {
+      generated: [
+        'dist',
+        'app/**/*.js',
+        'app/**/*.js.map'
+      ]
+    },
     connect: {
       debug: {
         options: {
@@ -87,18 +122,6 @@ module.exports = function(grunt) {
             expand: true,
           }
         ]
-      }
-    },
-    typescript: {
-      base: {
-        src: ['app/**/*.ts'],
-        options: {
-          module: 'amd',
-          base_path: '',
-          sourcemap: true,
-          noImplicitAny: true,
-          comments: true
-        }
       }
     },
     handlebars: {
@@ -177,7 +200,7 @@ module.exports = function(grunt) {
     },
     watch: {
       typescript: {
-        files: '<%= typescript.base.src %>',
+        files: [typescriptSources],
         tasks: ['typescript'],
         options: {
           livereload: true
@@ -210,18 +233,6 @@ module.exports = function(grunt) {
           'assets/app/css/images/*.png'
         ],
         dest: 'dist/manifest.appcache'
-      }
-    },
-    // install
-    bower: {
-      install: {
-        options: {
-          targetDir: 'assets/vendor/',
-          layout: 'byComponent',
-          install: true,
-          verbose: false,
-          cleanup: true
-        }
       }
     }
   });
