@@ -109,13 +109,15 @@ class ComicBedView extends CompositeView {
         break;
       case Reader.Status.Opened:
         (<any>this.$('#progress-dialog')).popup('close');
-        this.assign('#content', new ScreenCollectionView({
+        var screenView = new ScreenCollectionView({
           el: this.$('#content'),
           screens: this._reader.screens(),
           setting: this._setting.screenSetting(),
           mover: this._reader,
           template: templates.screens,
-        }));
+        });
+        this.assign('#content', screenView);
+        screenView.render();
         break;
       case Reader.Status.Error:
         (<any>this.$('#progress-dialog')).popup('close');

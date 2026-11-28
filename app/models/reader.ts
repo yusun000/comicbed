@@ -62,6 +62,7 @@ class ReaderModel extends Backbone.Model implements Reader.Reader {
   private _book: Book.Book;
   private _promise: Promise<Screens.Screens>;
   private _progress: Progress.Progress;
+  private _readingPositionKey: string;
 
   // ctor & initializer (TODO);
   constructor(bookFactory: Book.Factory,
@@ -75,6 +76,7 @@ class ReaderModel extends Backbone.Model implements Reader.Reader {
     this._book = null;
     this._promise = null;
     this._progress = Progress.create();
+    this._readingPositionKey = null;
     super();
   }
 
@@ -126,14 +128,20 @@ class ReaderModel extends Backbone.Model implements Reader.Reader {
   // open/close;
   openFile(file: File): Promise<Screens.Screens> {
     var url: string = (<any>window).URL.createObjectURL(file);
-    return this.openURL(url, {
+    var identity = JSON.stringify([file.name, file.size, (<any>file).lastModified]);
+    return this.openBook(url, 'file:' + identity, {
       name: file.name,
       mimeType: file.type,
     });
   }
 
   openURL(url: string, options?: Reader.Options): Promise<Screens.Screens> {
+    return this.openBook(url, 'url:' + url.split('#')[0], options);
+  }
+
+  private openBook(url: string, identity: string, options?: Reader.Options): Promise<Screens.Screens> {
     this.close();
+    this._readingPositionKey = 'comicbed.readingPosition.' + identity;
     this.setStatus(Reader.Status.Opening);
     this._progress.update({
       message: 'Downloading ...',
@@ -146,7 +154,7 @@ class ReaderModel extends Backbone.Model implements Reader.Reader {
       this._book = this._pageSorter.sort(book, this._setting.sortSetting());
       this.resetReadingInfo();
       this.setStatus(Reader.Status.Opened);
-      this.goToPage(this.currentPageNum());
+      this.goToPage(this.loadReadingPosition());
       return this._screens;
     }).progressed((progression: Progress.Progression) => {
       this._progress.update(progression);
@@ -222,13 +230,38 @@ class ReaderModel extends Backbone.Model implements Reader.Reader {
     }).catch(Promise.CancellationError, (error: any) => {
       // pass
     });
+    var pageChanged = pageNum !== this.currentPageNum();
     this.setCurrentPageNum(pageNum);
     this.setReadingDirection(direction);
+    if (pageChanged) {
+      this.saveReadingPosition(pageNum);
+    }
   }
 
   private isValidPageNum(pageNum: number): boolean {
     var pages = this._book.pages();
     return 0 <= pageNum && pageNum < pages.length;
+  }
+
+  private loadReadingPosition(): number {
+    try {
+      var saved = window.localStorage.getItem(this._readingPositionKey);
+      if (saved !== null && /^\d+$/.test(saved)) {
+        var pageNum = parseInt(saved, 10);
+        if (this.isValidPageNum(pageNum)) { return pageNum; }
+      }
+    } catch (error) {
+      // Reading still works when storage is unavailable.
+    }
+    return 0;
+  }
+
+  private saveReadingPosition(pageNum: number): void {
+    try {
+      window.localStorage.setItem(this._readingPositionKey, String(pageNum));
+    } catch (error) {
+      // Reading still works when storage is unavailable.
+    }
   }
 
   private resetReadingInfo(): void {
